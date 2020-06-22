@@ -123,7 +123,7 @@ NAN_METHOD(MbusMaster::SendControlFrame) {
     mbus_frame *frame = NULL, reply;
     MbusMaster* obj = node::ObjectWrap::Unwrap<MbusMaster>(info.This());
     
-    frame = mbus_frame_new(MBUS_FRAME_TYPE_CONTROL);
+    frame = mbus_frame_new(MBUS_FRAME_TYPE_LONG);
     if (frame == NULL)
     {
         MBUS_ERROR("%s: Failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
@@ -131,17 +131,23 @@ NAN_METHOD(MbusMaster::SendControlFrame) {
         return;
     }
     
+    frame->data_size = 4;
+    frame->control = 0x53;
+    frame->address = 0xFE; // broadcast
+    frame->control_information = 0x51;
+
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-    frame->control = info[0]->NumberValue(context).FromJust();
-    frame->address = info[1]->NumberValue(context).FromJust();
-    frame->control_information = info[2]->NumberValue(context).FromJust();
-    frame->checksum = info[3]->NumberValue(context).FromJust();
+    frame->data[0] = info[0]->NumberValue(context).FromJust();
+    frame->data[1] = info[1]->NumberValue(context).FromJust();
+    frame->data[2] = info[2]->NumberValue(context).FromJust();
+    frame->data[3] = info[3]->NumberValue(context).FromJust();
 
     mbus_send_frame(obj->handle, frame);
-    mbus_frame_free(frame);
 
     memset((void *)&reply, 0, sizeof(mbus_frame));
     ret = mbus_recv_frame(obj->handle, &reply);
+
+    mbus_frame_free(frame);
 
     if (ret != MBUS_RECV_RESULT_OK) {
         num = Nan::New(ret);
