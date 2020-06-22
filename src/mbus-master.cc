@@ -52,6 +52,7 @@ NAN_MODULE_INIT(MbusMaster::Init) {
     Nan::SetPrototypeMethod(tpl, "get", Get);
     Nan::SetPrototypeMethod(tpl, "scan", ScanSecondary);
     Nan::SetPrototypeMethod(tpl, "setPrimaryId", SetPrimaryId);
+    Nan::SetPrototypeMethod(tpl, "sendControlFrame", SendControlFrame);
 
     v8::Local<v8::Function> function = Nan::GetFunction(tpl).ToLocalChecked();
     constructor.Reset(function);
@@ -114,6 +115,41 @@ NAN_METHOD(MbusMaster::OpenTCP) {
         return;
     }
     info.GetReturnValue().Set(Nan::False());
+}
+
+NAN_METHOD(MbusMaster::SendControlFrame) {
+    int ret;
+    v8::Local<v8::Number> num;
+    mbus_frame *frame = NULL, reply;
+    MbusMaster* obj = node::ObjectWrap::Unwrap<MbusMaster>(info.This());
+    
+    frame = mbus_frame_new(MBUS_FRAME_TYPE_CONTROL);
+    if (frame == NULL)
+    {
+        MBUS_ERROR("%s: Failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        free(frame);
+        return;
+    }
+    
+    v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+    frame->control = info[0]->NumberValue(context).FromJust();
+    frame->address = info[1]->NumberValue(context).FromJust();
+    frame->control_information = info[2]->NumberValue(context).FromJust();
+    frame->checksum = info[3]->NumberValue(context).FromJust();
+
+    mbus_send_frame(obj->handle, frame);
+    mbus_frame_free(frame);
+
+    memset((void *)&reply, 0, sizeof(mbus_frame));
+    ret = mbus_recv_frame(obj->handle, &reply);
+
+    if (ret != MBUS_RECV_RESULT_OK) {
+        num = Nan::New(ret);
+        info.GetReturnValue().Set(num);
+        return;
+    }
+    num = Nan::New(mbus_frame_type(&reply));
+    info.GetReturnValue().Set(num);
 }
 
 NAN_METHOD(MbusMaster::OpenSerial) {
