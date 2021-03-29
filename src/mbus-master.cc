@@ -134,7 +134,6 @@ NAN_METHOD(MbusMaster::SendControlFrame) {
     frame->data_size = 4;
     frame->control = 0x53;
     frame->address = info[4]->NumberValue(context).FromJust();
- // frame->address = 0xFE; // broadcast
     frame->control_information = 0x51;
 
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
