@@ -131,17 +131,17 @@ NAN_METHOD(MbusMaster::SendControlFrame) {
         return;
     }
     
-    frame->data_size = 4;
-    frame->control = 0x53;
-    //frame->address = info[4]->NumberValue(context).FromJust();
-    frame->address = 0xFE; // broadcast
-    frame->control_information = 0x51;
+   v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
 
-    v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-    frame->data[0] = info[0]->NumberValue(context).FromJust();
-    frame->data[1] = info[1]->NumberValue(context).FromJust();
-    frame->data[2] = info[2]->NumberValue(context).FromJust();
-    frame->data[3] = info[3]->NumberValue(context).FromJust();
+frame->data_size = 4;
+frame->control = 0x53;
+frame->address = info[4]->NumberValue(context).FromJust();
+frame->control_information = 0x51;
+
+frame->data[0] = info[0]->NumberValue(context).FromJust();
+frame->data[1] = info[1]->NumberValue(context).FromJust();
+frame->data[2] = info[2]->NumberValue(context).FromJust();
+frame->data[3] = info[3]->NumberValue(context).FromJust();
 
     mbus_send_frame(obj->handle, frame);
 
